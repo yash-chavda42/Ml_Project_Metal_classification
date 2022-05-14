@@ -1,0 +1,106 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Mar  3 17:26:06 2022
+
+@author: param-mu-scom
+"""
+
+import numpy as np 
+import matplotlib.pyplot as plt
+import pandas as pd
+from sklearn.metrics import f1_score
+from sklearn.metrics import recall_score
+#from sklearn.metrics import pri_score
+from sklearn.metrics import precision_recall_fscore_support
+import cv2
+import os
+from sklearn import metrics
+
+
+path = "/home/param-mu-scom/ICT_Yash/YASHDATA/train_images/train.csv"
+path2= "/home/param-mu-scom/ICT_Yash/YASHDATA/train_images"
+dataset = pd.read_csv(path)
+
+
+print(dataset)
+
+data=dataset.values[:7095,0:2]#7000 image for train
+
+
+
+image=[]
+classes=[]
+
+#taking image from csv file
+for i in range(7094):   
+  name=data[i][0]
+  join_path=os.path.join(path2,name)  
+  img=cv2.imread(join_path)#read 5000 setof image
+  img2=cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+  image.append(img2)#append all the image in imge
+  classes.append(data[i][1])#append all the class in classes
+  
+
+
+#converitng into numpy
+image=np.array(image)
+classes=np.array(classes)
+
+#split train and test
+from sklearn.model_selection import train_test_split
+
+train_features,test_features,train_labels,test_labels=train_test_split(image,classes,test_size=0.20)
+
+
+nsamples, nx, ny = train_features.shape
+new_train_dataset = train_features.reshape((nsamples,nx*ny))
+
+
+nsamples1, nx1, ny1 = test_features.shape
+new_test_dataset = test_features.reshape((nsamples1,nx1*ny1))
+
+from sklearn.ensemble import RandomForestClassifier
+rf = RandomForestClassifier()
+rf.fit(new_train_dataset,train_labels)
+
+# Predictions on training and validation
+pred_train_val = rf.predict(new_train_dataset)
+pred_train_val
+
+# Predictions on testing
+pred_test_val = rf.predict(new_test_dataset)
+
+pred_test_val
+
+
+
+train_accuracy = list()
+test_accuracy = list()
+no_of_estimators = list()
+
+for i in range(10,700,50) :
+    clf = RandomForestClassifier(n_estimators=i)
+    clf.fit(new_train_dataset,train_labels)
+    y_pred = clf.predict(new_train_dataset)
+    train_accuracy.append(metrics.accuracy_score(train_labels, y_pred))
+    
+    y_pred_test = clf.predict(new_test_dataset)
+    test_accuracy.append(metrics.accuracy_score(test_labels, y_pred_test))
+    no_of_estimators.append(i)
+
+
+print(train_accuracy)
+print(test_accuracy)
+print(max(test_accuracy))
+
+
+plt.plot(no_of_estimators,train_accuracy,'g',label="Training Accuracy")
+plt.plot(no_of_estimators,test_accuracy,'b',label="Testing Accuracy")
+plt.title("Trainng and Testing Accuracy")
+plt.xlabel("No of estimators")
+plt.ylabel("Accuracy")
+plt.legend()
+plt.show()
+
+
